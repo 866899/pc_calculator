@@ -59,6 +59,20 @@ void main() {
       expect(find.byKey(const ValueKey('key-0')), findsOneWidget);
     });
 
+    testWidgets('物理键盘：函数快捷键 s30 求值 0.5', (tester) async {
+      await pumpApp(tester);
+      // 切到科学模式以获得右括号按钮（')' 为 Shift+0 组合键，测试模拟器无法独立发送）
+      await tester.tap(find.byKey(const ValueKey('mode-scientific')));
+      await tester.pumpAndSettle();
+      await tester.sendKeyEvent(LogicalKeyboardKey.keyS);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit0);
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('key-right-paren')));
+      await tester.pump();
+      expect(find.text('0.5'), findsWidgets);
+    });
+
     testWidgets('科学模式切换后出现函数按键且可计算', (tester) async {
       await pumpApp(tester);
       await tester.tap(find.byKey(const ValueKey('mode-scientific')));

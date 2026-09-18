@@ -358,6 +358,57 @@ void main() {
       expect(controller.handleKeyLabel('Shift'), isFalse);
       expect(controller.expression, '');
     });
+
+    test('科学函数快捷键（小写）', () {
+      const cases = {
+        's': 'sin(',
+        'o': 'cos(',
+        't': 'tan(',
+        'l': 'ln(',
+        'g': 'log(',
+        'q': 'sqrt(',
+        'p': 'π',
+        'e': 'e',
+      };
+      for (final entry in cases.entries) {
+        controller.clear();
+        expect(
+          controller.handleKeyLabel(entry.key),
+          isTrue,
+          reason: '${entry.key} 应被识别',
+        );
+        expect(
+          controller.expression,
+          entry.value,
+          reason: '${entry.key} 应输入 ${entry.value}',
+        );
+      }
+    });
+
+    test('大写函数快捷键（反函数与 exp）', () {
+      const cases = {'S': 'asin(', 'O': 'acos(', 'T': 'atan(', 'E': 'exp('};
+      for (final entry in cases.entries) {
+        controller.clear();
+        expect(controller.handleKeyLabel(entry.key), isTrue);
+        expect(controller.expression, entry.value);
+      }
+    });
+
+    test('科学计数法：2 e 3 求值 2000', () {
+      type(['2', 'e', '3']);
+      expect(controller.expression, '2e3');
+      controller.computeResult();
+      expect(controller.result, '2000');
+    });
+
+    test('函数快捷键组合求值 sin(30)', () {
+      controller.handleKeyLabel('s');
+      controller.handleKeyLabel('3');
+      controller.handleKeyLabel('0');
+      controller.handleKeyLabel(')');
+      controller.computeResult();
+      expect(controller.result, '0.5');
+    });
   });
 
   group('变更通知', () {

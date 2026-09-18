@@ -29,7 +29,8 @@ class CalculatorPage extends StatefulWidget {
   State<CalculatorPage> createState() => _CalculatorPageState();
 }
 
-class _CalculatorPageState extends State<CalculatorPage> {
+class _CalculatorPageState extends State<CalculatorPage>
+    with WidgetsBindingObserver {
   final _controller = CalculatorController();
   final _focusNode = FocusNode();
   final _scaffoldKey = GlobalKey<ScaffoldState>();
@@ -38,16 +39,30 @@ class _CalculatorPageState extends State<CalculatorPage> {
   bool _historyOpen = false;
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _controller.dispose();
     _focusNode.dispose();
     super.dispose();
   }
 
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // 从其他窗口切回时恢复键盘焦点，保证键盘输入始终可用。
+    if (state == AppLifecycleState.resumed) _focusNode.requestFocus();
+  }
+
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is KeyUpEvent) return KeyEventResult.ignored;
     final ch = event.character;
-    final label = (ch != null && ch.isNotEmpty && ch != '\r' && ch != '\n' && ch != '\t')
+    final label =
+        (ch != null && ch.isNotEmpty && ch != '\r' && ch != '\n' && ch != '\t')
         ? ch
         : event.logicalKey.keyLabel;
     return _controller.handleKeyLabel(label)
@@ -56,7 +71,8 @@ class _CalculatorPageState extends State<CalculatorPage> {
   }
 
   void _toggleHistory() {
-    final isWide = MediaQuery.sizeOf(context).width >= CalculatorPage._wideBreakpoint;
+    final isWide =
+        MediaQuery.sizeOf(context).width >= CalculatorPage._wideBreakpoint;
     if (isWide) {
       setState(() => _historyOpen = !_historyOpen);
     } else {
@@ -70,43 +86,49 @@ class _CalculatorPageState extends State<CalculatorPage> {
       focusNode: _focusNode,
       autofocus: true,
       onKeyEvent: _handleKeyEvent,
-      child: Scaffold(
-        key: _scaffoldKey,
-        endDrawer: Drawer(
-          width: 320,
-          child: HistoryPanel(
-            controller: _controller,
-            onClose: () => Navigator.of(context).pop(),
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        // 点击界面任意位置（含按钮）后拉回焦点，键盘输入始终可用。
+        onTap: () => _focusNode.requestFocus(),
+        child: Scaffold(
+          key: _scaffoldKey,
+          endDrawer: Drawer(
+            width: 320,
+            child: HistoryPanel(
+              controller: _controller,
+              onClose: () => Navigator.of(context).pop(),
+            ),
           ),
-        ),
-        body: SafeArea(
-          child: ListenableBuilder(
-            listenable: _controller,
-            builder: (context, _) => LayoutBuilder(
-              builder: (context, constraints) {
-                final isWide = constraints.maxWidth >= CalculatorPage._wideBreakpoint;
-                final showSidePanel = isWide && _historyOpen;
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Expanded(
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 520),
-                          child: _buildCalculator(context),
+          body: SafeArea(
+            child: ListenableBuilder(
+              listenable: _controller,
+              builder: (context, _) => LayoutBuilder(
+                builder: (context, constraints) {
+                  final isWide =
+                      constraints.maxWidth >= CalculatorPage._wideBreakpoint;
+                  final showSidePanel = isWide && _historyOpen;
+                  return Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 520),
+                            child: _buildCalculator(context),
+                          ),
                         ),
                       ),
-                    ),
-                    if (showSidePanel) ...[
-                      const VerticalDivider(width: 1),
-                      SizedBox(
-                        width: 300,
-                        child: HistoryPanel(controller: _controller),
-                      ),
+                      if (showSidePanel) ...[
+                        const VerticalDivider(width: 1),
+                        SizedBox(
+                          width: 300,
+                          child: HistoryPanel(controller: _controller),
+                        ),
+                      ],
                     ],
-                  ],
-                );
-              },
+                  );
+                },
+              ),
             ),
           ),
         ),
@@ -144,7 +166,12 @@ class _CalculatorPageState extends State<CalculatorPage> {
         children: [
           Icon(Icons.calculate_rounded, color: scheme.primary),
           const SizedBox(width: 8),
-          Text('计算器', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600)),
+          Text(
+            '计算器',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
           const Spacer(),
           FilledButton.tonal(
             key: const ValueKey('btn-angle-unit'),
@@ -153,7 +180,11 @@ class _CalculatorPageState extends State<CalculatorPage> {
               visualDensity: VisualDensity.compact,
               padding: const EdgeInsets.symmetric(horizontal: 12),
               minimumSize: const Size(0, 34),
-              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w700, letterSpacing: 0.5),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.5,
+              ),
             ),
             child: Text(_controller.isDegreeMode ? 'DEG' : 'RAD'),
           ),
@@ -162,27 +193,38 @@ class _CalculatorPageState extends State<CalculatorPage> {
             segments: const [
               ButtonSegment(
                 value: false,
-                label: KeyedSubtree(key: ValueKey('mode-standard'), child: Text('标准')),
+                label: KeyedSubtree(
+                  key: ValueKey('mode-standard'),
+                  child: Text('标准'),
+                ),
               ),
               ButtonSegment(
                 value: true,
-                label: KeyedSubtree(key: ValueKey('mode-scientific'), child: Text('科学')),
+                label: KeyedSubtree(
+                  key: ValueKey('mode-scientific'),
+                  child: Text('科学'),
+                ),
               ),
             ],
             selected: {_scientific},
-            onSelectionChanged: (selection) => setState(() => _scientific = selection.first),
+            onSelectionChanged: (selection) =>
+                setState(() => _scientific = selection.first),
             showSelectedIcon: false,
             style: ButtonStyle(
               visualDensity: VisualDensity.compact,
               textStyle: WidgetStatePropertyAll(
-                theme.textTheme.labelLarge?.copyWith(fontWeight: FontWeight.w500),
+                theme.textTheme.labelLarge?.copyWith(
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ),
           ),
           const SizedBox(width: 4),
           IconButton(
             key: const ValueKey('btn-theme'),
-            icon: Icon(isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined),
+            icon: Icon(
+              isDark ? Icons.light_mode_outlined : Icons.dark_mode_outlined,
+            ),
             tooltip: isDark ? '浅色主题' : '深色主题',
             onPressed: () => widget.onThemeModeChanged(
               isDark ? ThemeMode.light : ThemeMode.dark,

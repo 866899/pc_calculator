@@ -98,13 +98,16 @@ class CalculatorController extends ChangeNotifier {
       return;
     }
     // 乘除幂之后允许追加一元负号：12* + '-' -> 12*-
-    final unaryMinusSpot = op == '-' && (last == '*' || last == '/' || last == '^');
+    final unaryMinusSpot =
+        op == '-' && (last == '*' || last == '/' || last == '^');
     if (unaryMinusSpot) {
       _expression = expr + op;
       return;
     }
     // 末尾是一元负号（形如 "5*-"）时，替换运算符需连带删除负号。
-    if (last == '-' && expr.length >= 2 && _binaryOps.contains(expr[expr.length - 2])) {
+    if (last == '-' &&
+        expr.length >= 2 &&
+        _binaryOps.contains(expr[expr.length - 2])) {
       _expression = expr.substring(0, expr.length - 2) + op;
       return;
     }
@@ -123,8 +126,9 @@ class CalculatorController extends ChangeNotifier {
     if (_expression.isEmpty) return;
     _justEvaluated = false;
     _error = null;
-    final funcMatch =
-        RegExp(r'(?:sin|cos|tan|asin|acos|atan|ln|log|sqrt|abs|exp)\($').firstMatch(_expression);
+    final funcMatch = RegExp(
+      r'(?:sin|cos|tan|asin|acos|atan|ln|log|sqrt|abs|exp)\($',
+    ).firstMatch(_expression);
     if (funcMatch != null) {
       _expression = _expression.substring(0, funcMatch.start);
     } else {
@@ -150,11 +154,15 @@ class CalculatorController extends ChangeNotifier {
     final start = m.start;
     final before = start > 0 ? _expression[start - 1] : '';
     final before2 = start > 1 ? _expression[start - 2] : '';
-    final hasOwnMinus = before == '-' && (start == 1 || _binaryOps.contains(before2) || before2 == '(');
+    final hasOwnMinus =
+        before == '-' &&
+        (start == 1 || _binaryOps.contains(before2) || before2 == '(');
     if (hasOwnMinus) {
-      _expression = '${_expression.substring(0, start - 1)}${_expression.substring(start)}';
+      _expression =
+          '${_expression.substring(0, start - 1)}${_expression.substring(start)}';
     } else {
-      _expression = '${_expression.substring(0, start)}-${_expression.substring(start)}';
+      _expression =
+          '${_expression.substring(0, start)}-${_expression.substring(start)}';
     }
     _justEvaluated = false;
     _updatePreview();
@@ -171,11 +179,14 @@ class CalculatorController extends ChangeNotifier {
     try {
       final value = _evaluate(_expression);
       final formatted = formatResult(value);
-      _history.insert(0, HistoryEntry(
-        expression: _expression,
-        result: formatted,
-        timestamp: DateTime.now(),
-      ));
+      _history.insert(
+        0,
+        HistoryEntry(
+          expression: _expression,
+          result: formatted,
+          timestamp: DateTime.now(),
+        ),
+      );
       _expression = formatted;
       _result = formatted;
       _error = null;
@@ -217,6 +228,10 @@ class CalculatorController extends ChangeNotifier {
   // ---------------------------------------------------------------------
 
   /// 处理键盘按键（keyLabel 或字符），返回是否被识别。
+  ///
+  /// 除数字与运算符外，支持科学函数快捷键（与 Windows 计算器习惯对齐）：
+  /// `s`→sin( `o`→cos( `t`→tan( `l`→ln( `g`→log( `q`→sqrt( `p`→π `e`→e；
+  /// 大写 `S`→asin( `O`→acos( `T`→atan( `E`→exp(。
   bool handleKeyLabel(String label) {
     switch (label) {
       case 'Enter':
@@ -251,6 +266,43 @@ class CalculatorController extends ChangeNotifier {
       case '÷':
         input(label);
         return true;
+      // 科学函数与常量快捷键
+      case 's':
+        input('sin(');
+        return true;
+      case 'S':
+        input('asin(');
+        return true;
+      case 'o':
+        input('cos(');
+        return true;
+      case 'O':
+        input('acos(');
+        return true;
+      case 't':
+        input('tan(');
+        return true;
+      case 'T':
+        input('atan(');
+        return true;
+      case 'l':
+        input('ln(');
+        return true;
+      case 'g':
+        input('log(');
+        return true;
+      case 'q':
+        input('sqrt(');
+        return true;
+      case 'E':
+        input('exp(');
+        return true;
+      case 'p':
+        input('π');
+        return true;
+      case 'e':
+        input('e');
+        return true;
     }
     if (label.length == 1 && '0123456789'.contains(label)) {
       input(label);
@@ -264,9 +316,9 @@ class CalculatorController extends ChangeNotifier {
   // ---------------------------------------------------------------------
 
   double _evaluate(String expression) => CalculatorEngine.evaluate(
-        expression,
-        angleUnit: _isDegreeMode ? AngleUnit.degree : AngleUnit.radian,
-      );
+    expression,
+    angleUnit: _isDegreeMode ? AngleUnit.degree : AngleUnit.radian,
+  );
 
   /// 实时预览：非法中间态不报错，保留上一个有效结果。
   void _updatePreview() {
