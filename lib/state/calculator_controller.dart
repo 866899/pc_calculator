@@ -17,8 +17,38 @@ class CalculatorController extends ChangeNotifier {
   /// 二元运算符集合（内部统一使用 ASCII 表示）。
   static const _binaryOps = {'+', '-', '*', '/', '^'};
 
-  /// 显示符号到内部 ASCII 符号的归一化表。
-  static const _normalize = {'×': '*', '÷': '/', '−': '-'};
+  /// 符号归一化表：显示符号 / 全角符号 / Unicode 变体 → 内部 ASCII 符号。
+  ///
+  /// 同时覆盖中文输入法在中文标点状态下输出的全角符号（`＋－＊／％＾＝（）`），
+  /// 保证键盘输入与界面显示符号都能被正确识别。
+  static const _normalize = {
+    '×': '*',
+    '÷': '/',
+    '−': '-',
+    '–': '-',
+    '—': '-',
+    '＋': '+',
+    '－': '-',
+    '＊': '*',
+    '／': '/',
+    '＾': '^',
+    '％': '%',
+    '＝': '=',
+    '（': '(',
+    '）': ')',
+    '．': '.',
+    '，': ',',
+  };
+
+  /// 将文本中的符号统一归一化为内部 ASCII 表示（逐字符映射）。
+  static String _normalizeSymbols(String text) {
+    if (text.isEmpty) return text;
+    final buffer = StringBuffer();
+    for (final unit in text.split('')) {
+      buffer.write(_normalize[unit] ?? unit);
+    }
+    return buffer.toString();
+  }
 
   String _expression = '';
   String _result = '0';
@@ -55,7 +85,7 @@ class CalculatorController extends ChangeNotifier {
   /// 也可以是复合 token（如 `sin(`），或归一化前的显示符号（`×`、`÷`）。
   void input(String token) {
     if (token.isEmpty) return;
-    token = token.split('').map((c) => _normalize[c] ?? c).join();
+    token = _normalizeSymbols(token);
 
     // 错误状态下任意输入都开启全新表达式。
     if (hasError) {
@@ -232,7 +262,11 @@ class CalculatorController extends ChangeNotifier {
   /// 除数字与运算符外，支持科学函数快捷键（与 Windows 计算器习惯对齐）：
   /// `s`→sin( `o`→cos( `t`→tan( `l`→ln( `g`→log( `q`→sqrt( `p`→π `e`→e；
   /// 大写 `S`→asin( `O`→acos( `T`→atan( `E`→exp(。
+  ///
+  /// 符号键先经 [_normalizeSymbols] 归一化，因此 `＋` `－` `＊` `／` `％`
+  /// 等全角符号（中文输入法中文标点状态）与 `×` `÷` `−` 同样可用。
   bool handleKeyLabel(String label) {
+    label = _normalizeSymbols(label);
     switch (label) {
       case 'Enter':
       case 'Return':

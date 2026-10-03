@@ -409,6 +409,75 @@ void main() {
       controller.computeResult();
       expect(controller.result, '0.5');
     });
+
+    test('半角符号键均可输入并参与运算', () {
+      for (final op in ['+', '-', '*', '/', '^', '%']) {
+        controller.clear();
+        controller.handleKeyLabel('8');
+        expect(
+          controller.handleKeyLabel(op),
+          isTrue,
+          reason: '运算符 $op 应被识别',
+        );
+        expect(controller.expression, '8$op', reason: '应输入 $op');
+      }
+    });
+
+    test('全角符号（中文输入法中文标点）归一化为半角', () {
+      const cases = {
+        '＋': '1+',
+        '－': '1-',
+        '＊': '1*',
+        '／': '1/',
+        '＾': '1^',
+        '％': '1%',
+        '（': '1(',
+        '．': '1.',
+      };
+      for (final entry in cases.entries) {
+        controller.clear();
+        controller.handleKeyLabel('1');
+        expect(
+          controller.handleKeyLabel(entry.key),
+          isTrue,
+          reason: '全角符号 ${entry.key} 应被识别',
+        );
+        expect(
+          controller.expression,
+          entry.value,
+          reason: '${entry.key} 应归一化为 ${entry.value}',
+        );
+      }
+    });
+
+    test('全角括号与等号：可完整输入 (1+2)＝ 并求值', () {
+      controller.handleKeyLabel('（');
+      controller.handleKeyLabel('1');
+      controller.handleKeyLabel('＋');
+      controller.handleKeyLabel('2');
+      controller.handleKeyLabel('）');
+      expect(controller.expression, '(1+2)');
+      expect(controller.handleKeyLabel('＝'), isTrue);
+      expect(controller.result, '3');
+      expect(controller.history, hasLength(1));
+    });
+
+    test('数学符号 × ÷ − 与 Unicode 连接号同样可用', () {
+      controller.handleKeyLabel('6');
+      controller.handleKeyLabel('×');
+      controller.handleKeyLabel('7');
+      expect(controller.expression, '6*7');
+      controller.clear();
+      controller.handleKeyLabel('8');
+      controller.handleKeyLabel('÷');
+      controller.handleKeyLabel('2');
+      expect(controller.expression, '8/2');
+      controller.clear();
+      controller.handleKeyLabel('9');
+      controller.handleKeyLabel('−');
+      controller.handleKeyLabel('4');
+      expect(controller.expression, '9-4');
+    });
   });
 
   group('变更通知', () {

@@ -58,13 +58,38 @@ class _CalculatorPageState extends State<CalculatorPage>
     if (state == AppLifecycleState.resumed) _focusNode.requestFocus();
   }
 
+  /// 逻辑键 → 计算器 token 映射。
+  ///
+  /// 作为 [KeyEvent.character] 的兜底，两类键尤其需要：
+  /// - 小键盘运算符：其 keyLabel 为 `NumpadMultiply` 等，无法直接识别；
+  /// - 需 Shift 输入的符号键：字符缺失时 keyLabel 可能退化为 `=`。
+  static final _logicalKeyTokens = <LogicalKeyboardKey, String>{
+    LogicalKeyboardKey.add: '+',
+    LogicalKeyboardKey.minus: '-',
+    LogicalKeyboardKey.asterisk: '*',
+    LogicalKeyboardKey.slash: '/',
+    LogicalKeyboardKey.percent: '%',
+    LogicalKeyboardKey.caret: '^',
+    LogicalKeyboardKey.equal: '=',
+    LogicalKeyboardKey.parenthesisLeft: '(',
+    LogicalKeyboardKey.parenthesisRight: ')',
+    LogicalKeyboardKey.numpadAdd: '+',
+    LogicalKeyboardKey.numpadSubtract: '-',
+    LogicalKeyboardKey.numpadMultiply: '*',
+    LogicalKeyboardKey.numpadDivide: '/',
+    LogicalKeyboardKey.numpadDecimal: '.',
+    LogicalKeyboardKey.numpadEnter: 'Enter',
+  };
+
   KeyEventResult _handleKeyEvent(FocusNode node, KeyEvent event) {
     if (event is KeyUpEvent) return KeyEventResult.ignored;
     final ch = event.character;
-    final label =
-        (ch != null && ch.isNotEmpty && ch != '\r' && ch != '\n' && ch != '\t')
+    final hasChar =
+        ch != null && ch.isNotEmpty && ch != '\r' && ch != '\n' && ch != '\t';
+    // 优先使用字符；字符缺失时用逻辑键映射兜底，最后回退到 keyLabel。
+    final label = hasChar
         ? ch
-        : event.logicalKey.keyLabel;
+        : (_logicalKeyTokens[event.logicalKey] ?? event.logicalKey.keyLabel);
     return _controller.handleKeyLabel(label)
         ? KeyEventResult.handled
         : KeyEventResult.ignored;

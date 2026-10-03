@@ -73,6 +73,26 @@ void main() {
       expect(find.text('0.5'), findsWidgets);
     });
 
+    testWidgets('物理键盘：加号/减号符号可输入并参与运算', (tester) async {
+      await pumpApp(tester);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit7);
+      await tester.sendKeyEvent(LogicalKeyboardKey.minus);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit5);
+      await tester.pump();
+      // 表达式 7-5 实时预览为 2
+      expect(find.text('7-5'), findsWidgets);
+      expect(find.text('2'), findsWidgets);
+      // 小键盘加号：keyLabel 无法识别，走逻辑键兜底映射
+      await tester.sendKeyEvent(LogicalKeyboardKey.numpadAdd);
+      await tester.sendKeyEvent(LogicalKeyboardKey.digit3);
+      await tester.pump();
+      expect(find.text('7-5+3'), findsWidgets);
+      expect(find.text('5'), findsWidgets);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pumpAndSettle();
+      expect(find.text('5'), findsWidgets);
+    });
+
     testWidgets('科学模式切换后出现函数按键且可计算', (tester) async {
       await pumpApp(tester);
       await tester.tap(find.byKey(const ValueKey('mode-scientific')));
